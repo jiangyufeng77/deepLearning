@@ -1,0 +1,162 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{graphicx,subfig}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[pagebackref=true,breaklinks=true, letterpaper=true, colorlinks,bookmarks=false]{hyperref} 
+\usepackage{amssymb}
+\usepackage{outline} \usepackage{pmgraph} \usepackage[normalem]{ulem}
+\usepackage{graphicx} \usepackage{verbatim}
+
+% \usepackage{minted} % need `-shell-escape' argument for local compile
+
+\title{
+    \vspace*{1in}
+    \includegraphics[width=2.75in]{zhenglab-logo.png}\\
+    \vspace*{1.2in}
+    \textbf{\huge Weekly Work Report}
+    \vspace{0.2in}
+}
+
+\author{Author Name \\
+    \vspace*{0.5in} \\
+    \textbf{VISION@OUC} \\
+    \vspace*{1in}
+}
+
+\date{\today}
+
+
+\begin{document}
+
+\maketitle
+\setcounter{page}{0}
+\thispagestyle{empty}
+\newpage
+\section{Research problem}
+
+I am working on the paper named discriminative region proposal adversarial networks for high-quality image-to-image translation and written by Chao Wang~\emph{et al.}~\cite{dis}. Running codes written by myself as the auxiliary experiment are main tasks needing me to devote myself to do.
+
+\section{Research approach}
+
+I need to understand the main structure of the network and codes written by Chao Wang, becasue the main task is realising some function coded by myself. Thus, the learning and coding of Python~\cite{Xuefeng} and Pytorch~\cite{bilibili} is necessary.
+
+\section{Research progress}
+
+I have learned the first, second and fourth part at deep learning course~\cite{Neural} to get the basic and principle understanding of neural network. Then, reading and understanding the article~\cite{dis} becomes the first task. Last week, I have tried to write easy codes to implement networks like autoencoder. However, when it comes to GAN and DCGAN, the most thing I did is watching codes cloned at github and imitating to write only the part of defining networks. 
+
+\section{Progress in this week} 
+
+In this week, the main task is running and understanding codes about pix2pix. Before watching the pix2pix codes, I read the article which introduces pix2pix~\cite{Image}, and run codes cloned from github~\cite{Git} at the server.
+
+\subsection{Read the article}
+
+Because this pix2pix is close to the network designed by Chao Wang, and the major task is evaluating the network compared to pix2pix. Thus, I read this article about pix2pix carefully. 
+
+The innovation point of pix2pix is that authors used a novel autoencoder network with skip connecitons named ``U-Net'' (see Figure~\ref{fig1}) at generator. Let $Ck$ denote a Convolution-BatchNorm-ReLU layer with $k$ filters. $CDk$ denotes a Convolution-BatchNorm-Dropout-ReLU layer with a dropout rate of 50\%. All ocnvolutions are $4\times 4$ spatial filters applied with stride 2. Convolutions in the encoder, and in the discriminator, downsample by a factor of 2, whereas in the decoder they upsample by factor of 2.  
+
+\begin{figure}[hb]
+\begin{center}
+\includegraphics[width=14cm]{p1.png}
+\end{center}
+\caption{Two choices for the architecture of the generator. The ``U-Net'' is an encoder-decoder with skip connections between mirrored layers in the encoder and decoder stacks.} 
+\label{fig1}
+\end{figure}
+
+{\bf Generator architectures:} The encoder-decoder architecture consists of:\\
+{\bf encoder:} $C64-C128-C256-C512-C512-C512-C512-C512$\\
+{\bf U-Net decoder:} $CD512-CD1024-CD1024-CD1024-CD1024-C512-C256-C128$\\
+The reason why channels of U-Net decoder is the double of channels of encoder is that the channels not only comes from the last layer, but also comes from the mirror layers because of skip connections. After the last layer in the decoder, a convolution is applied to map to the number of output channels, followed by a Tanh function. As an exceptin to the above notation, Batch-Norm is not applied to the first $C64$ layer in the encoder. All ReLU in the encoder are leaky, with slope 0.2, while ReLUs in the decoder are not leaky.
+
+{\bf Discriminaotr architectures:} Authors applied $70\times 70$ PatchGAN to alleviate articfacts and achieve slightly better similar scores. \\
+{\bf $70 \times 70$ discriminator architectue:} $C64-C128-C256-C512$.\\
+After the last layer, a convolution is appplied to map to a 1 dimensional output, followed by a Sigmoid function. BatchNorm is not applied to the first $C64$ layer. All ReLUs are leaky, with slope 0.2.
+
+The other innovation point is adding the L1 loss to the cAGAN. The discriminator's job remains unchanged, but the generaotr is tasked to not only fool the discriminator but also to be near the ground truth output in an L2 sense. Authors also explore this option, using L1 distance rather than L2 as L1 encourages less blurring. Taking all factors into consideration, the final objective is~\cite{Image}:\\
+\begin{gather}
+G^{\ast} = arg\mathop{\min}\limits_G\mathop{\max}\limits_D\mathcal{L}_{cGAN}(G, D) + \lambda\mathcal{L}_{L1}(G).
+\end{gather} 
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width = 10cm]{option.png}
+\end{center}
+\caption{The start of running pix2pix.}
+\label{fig2}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=14cm]{pix1.png}
+\end{center}
+\caption{The result of pix2pix.}
+\label{fig3}
+\end{figure*}
+
+\subsection{Run codes}
+
+Before running codes downloaded from github~\cite{Git}, I learned some grammar about Python~\cite{Xuefeng} to make me understand codes clearly. I imitated codes written at the website to make me have a profound impression as reading the course. Then, installing some libraries at the terminal to match codes by using~\cite{Git}:\\
+\begin{gather}
+pip~~install~~visdom~~dominate
+\end{gather} 
+After cloning codes to the server which ip is 222.195.147.33 and downloading the dataset, I run the train.py with GPU. I need to run the train.py code at one termimal just as shown at Figure~\ref{fig2}, and open another terminal to view training results and loss plots by running $python~~-m~~visdom.server$, and click the URL http://localhost:8097 (see Figure~\ref{fig3}). 
+
+When the training has done, I run the test.py at the server and all results are saved to a html file. Downloading the folder named results from the server to the local, I open this html file to see images generated by pix2pix (see Figure~\ref{fig4})
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=12cm]{test.png}
+\end{center}
+\caption{The test result of pix2pix.}
+\label{fig4}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=12cm]{train.png}
+\end{center}
+\caption{Train.}
+\label{fig5}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=12cm]{network.png}
+\end{center}
+\caption{Network.}
+\label{fig6}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=12cm]{pix2pix.png}
+\end{center}
+\caption{Pix2pix$\_$model.}
+\label{fig7}
+\end{figure*}
+
+\subsection{Read and understand codes}
+
+The whole codes contain many folders like options, models and data. The main codes I read are train.py (Figure~\ref{fig5}), network.py (Figure~\ref{fig6}) and pix2pix$\_$model.py (Figure~\ref{fig7}) with some interpretions searched from baidu or Python files. 
+
+
+
+
+
+
+
+
+
+{\small
+ 
+ \bibliographystyle{ieee}
+ \bibliography{pix}
+}
+
+
+
+
+\end{document}
