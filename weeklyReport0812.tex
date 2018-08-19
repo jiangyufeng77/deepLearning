@@ -1,0 +1,169 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{graphicx,subfig}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[pagebackref=true,breaklinks=true, letterpaper=true, colorlinks,bookmarks=false]{hyperref} 
+\usepackage{amssymb}
+\usepackage{outline} \usepackage{pmgraph} \usepackage[normalem]{ulem}
+\usepackage{graphicx} \usepackage{verbatim}
+
+% \usepackage{minted} % need `-shell-escape' argument for local compile
+
+\title{
+    \vspace*{1in}
+    \includegraphics[width=2.75in]{zhenglab-logo.png}\\
+    \vspace*{1.2in}
+    \textbf{\huge Weekly Work Report}
+    \vspace{0.2in}
+}
+
+\author{Author Name \\
+    \vspace*{0.5in} \\
+    \textbf{VISION@OUC} \\
+    \vspace*{1in}
+}
+
+\date{\today}
+
+
+\begin{document}
+
+\maketitle
+\setcounter{page}{0}
+\thispagestyle{empty}
+\newpage
+\section{Research problem}
+
+I am working on the paper named discriminative region proposal adversarial networks for high-quality image-to-image translation and written by Chao Wang~\emph{et al.}~\cite{dis}. Running codes written by myself as the auxiliary experiment are main tasks needing me to devote myself to do.
+
+\section{Research approach}
+
+I need to read papers and codes about GAN, DCGAN and Stack~\emph{et al.} to add experiments for codes written by Chao Wang to get more functions and explaination.
+
+\section{Research progress}
+
+Before this week, I have written codes about autoencoder with both all linear layers and convolution layers. When it comes to GAN and DCGAN, I just can read codes written by others at github and write the defination code about networks.
+Then, I have read the pix2pix codes cloned from github~\cite{Git} and DRPAN codes~\cite{god} at last week, and have a basic understanding to it.
+
+\section{Progress in this week}
+
+In this week, the main task is running and reading DRPAN codes~\cite{god} and trying to write code for implementing a generator using dilation convolution. 
+
+\subsection{DRPAN}
+
+The first thing I have done in this week is running DRPAN codes on the server via a sequence:
+\begin{gather}
+python~main.py~--config~configs/facades.yaml~--cuda~--gpu\_ids~0
+\end{gather}
+where the gpu\_id needs me to modify after checking the use information of gpu using a code: $nvidia-smi$. When training StackGan-like model, there are some things need to modify. One is verifying the class name called DatasetFromFolder into Aligned\_Dataset, because there is not a DatasetFromFolder class in data/dataset.py. Two is modifying the outf and outf\_test path to the folder creaeted by me at the server. The last one is adding the parser.add\_opption about ``--cuda''. The final results on DRPAN training and StackGan-like training is stored at folders named checkpoints and checkpointss separately.
+
+\begin{figure}[hb]
+\begin{center}
+\includegraphics[width=10cm]{Generator_network_nc32_ou32_ngf64.png}
+\end{center}
+\caption{The generator structure of U-Net.}
+\label{fig3}
+\end{figure}
+
+Reading codes is started from main.py, and searching some functions meaning and useage to understand the code better after knowing the effect of every module. The second step is reading the trainer.py to get a deeper understanding about the procedure on training. The third main part is network. 
+
+\begin{figure}[hb]
+\begin{center}
+\includegraphics[width=10cm]{patchD_network_nc32_oc32_ngf64.png}
+\end{center}
+\caption{The patch discriminator structure.}
+\label{fig4}
+\end{figure}
+
+\begin{figure}[hb]
+\begin{center}
+\includegraphics[width=10cm]{resnetGenerator_nc32_oc32_ngf64.png}
+\end{center}
+\caption{The first part of Resnet generator structure.}
+\label{fig1}
+\end{figure}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=10cm]{resnetGenerator_nc32_oc32_ngf64_2.png}
+\end{center}
+\caption{The second part of Resnet generator structure.}
+\label{fig2}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=10cm]{Discriminator_r_network_nc32_oc32_ndf64.png}
+\end{center}
+\caption{The reviser structure.}
+\label{fig5}
+\end{figure*}
+
+In this python file, there are some networks for generator, discriminator and reviser. The first option about generator is Resnet, and the whole sturcture is shown at Figure~\ref{fig1} and Figure~\ref{fig2}. 
+
+The front layers use convolution and Instance batch norm, and the activation function is ReLU. Correspondingly, the last few layers use deconvolution and Instance batch norm, the activation is also using ReLU except the last layer which does not use batch norm and uses tanh function instead of ReLU. The midden layers use 6 resnet blocks. The second option for generator is U-Net similar to pix2pix~\cite{Image} where there are an autoencoder network with skip connections (see Figre~\ref{fig3}).
+
+The patch discriminator with 5 convolution layers is shown at Figure~\ref{fig4}. In this network, the first layer does not use instance batch norm and the last layer only use convolution and sigmoid function. The activation function changes to LeakyReLU function. 
+
+Similarly, the reviser (see Figure~\ref{fig5}) also has a discriminator purpose with 7 convolution layers where the activation function is LeakyReLU with slope 0.2. The first layer does not use batch norm and the last layer only use sigmoid function. 
+
+\subsection{Dilation convolution}
+
+After reading DRPAN codes, the next thing needed to do is adding a generator network about dilation convolution. The network of paper~\cite{Generative} uses dilation convolutions at the midden layers. Their code is published at github~\cite{Jia}. However, they use tensorflow instead of pytorch. Thus, the main thing I have done is reading their code and understanding the stage1 network. Then, writting my own code with pytorch using their network. 
+
+In terms of layer inplementations, they use mirror padding for all convolution layers and remove batch normalization layers which they found deteriorates color coherence. Also, they use ELUs as activation functions instead of ReLU, and clip the output filter values instead of using $tanh$ or $sigmoid$ functions. Based on their network thought, I write this network (see Figure~\ref{fig6} and Figure~\ref{fig7}).
+\begin{figure*}
+\begin{center}
+\includegraphics[width=10cm]{dilation.png}
+\end{center}
+\caption{The layers of dilation convolution network.}
+\label{fig6}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=10cm]{dconvolution.png}
+\end{center}
+\caption{The forward propagation of dilation convolution network.}
+\label{fig7}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=10cm]{dia.png}
+\end{center}
+\caption{The layers of the whole dilation convolution network.}
+\label{fig8}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=10cm]{training.png}
+\end{center}
+\caption{The training procedure of DRPAN adding dilation convolutions.}
+\label{fig9}
+\end{figure*}
+
+After modifying configs and facades.yaml, the network can run at the server. The whole generator network printed at the server is shown at Figure~\ref{fig8}. The code is running, and the results can be seen at tomorrow morning.
+
+
+
+
+
+
+
+{\small
+\bibliographystyle{ieee}
+\bibliography{weekly}
+}
+
+
+
+
+
+
+\end{document}

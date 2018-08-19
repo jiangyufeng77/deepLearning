@@ -1,0 +1,159 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{graphicx,subfig}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[pagebackref=true,breaklinks=true, letterpaper=true, colorlinks,bookmarks=false]{hyperref} 
+\usepackage{amssymb}
+\usepackage{outline} \usepackage{pmgraph} \usepackage[normalem]{ulem}
+\usepackage{graphicx} \usepackage{verbatim}
+
+% \usepackage{minted} % need `-shell-escape' argument for local compile
+
+\title{
+    \vspace*{1in}
+    \includegraphics[width=2.75in]{zhenglab-logo.png}\\
+    \vspace*{1.2in}
+    \textbf{\huge Weekly Work Report}
+    \vspace{0.2in}
+}
+
+\author{Author Name \\
+    \vspace*{0.5in} \\
+    \textbf{VISION@OUC} \\
+    \vspace*{1in}
+}
+
+\date{\today}
+
+
+\begin{document}
+
+\maketitle
+\setcounter{page}{0}
+\thispagestyle{empty}
+\newpage
+\section{Research problem}
+
+I am working on the paper written by Chao Wang~\emph{et al.}~\cite{dis} to add some codes to it for realizing more functions and making the generated images look more reality. 
+
+\section{Research approach}
+
+I need to read papers and codes about GAN, DCGAN and dilation convolution generator~\emph{et al.}.
+
+\section{Research progress}
+
+Before this week, I have written codes about autoencoder, GAN and DCGAN. Then, I have read the pix2pix paper and codes cloned from github~\cite{Git}. Cloning the DRPAN codes~\cite{god} to run it at the server to see the final results. The latest work is writting codes about the dilation convolution. 
+
+\section{Progress in this week}
+
+The main work needed to do is writting a generator code using the dilation convolution.
+
+\subsection{The first dilation convolution network}
+
+The first attempt writting the dilation convolution codes is using a thin but deep network proposed at~\cite{Generative} just like Figure~\ref{fig1}.
+
+\begin{figure}[hb]
+\begin{center}
+\includegraphics[width=16cm]{dilation1.png}
+\end{center}
+\caption{Overview of the improved generative inpainting framework. The coarse network is trained with reconstruction loss explicitly, while the refinement network is trained with reconstruction loss, global and local WGAN-GP adversarial loss.}
+\label{fig1}
+\end{figure}
+
+The reason why we want to use the dilation convolution as the consists of the generator is that the dilation convolution is a powerful tool that can enlarge the receptive field of feature points without reducing the resolution of the feature maps. 
+
+When I writed the codes and run it at the server, however, the final result does not work perfectly. Generated images are all pink pictures like Figure~\ref{fig2}.
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=5cm]{fakeB_5step_epoch_001.png}
+\end{center}
+\caption{The generated fakeB image at the epoch 001.}
+\label{fig2}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=16cm]{dilation2.png}
+\end{center}
+\caption{D-LinkNet architecture. Each blue rectangular block represents a multi-channel features map. Part A is the encoder of D-LinkNet. D-LinkNet uses ResNet34 as encoder. Part C is the decoder of D-LinkNet, it is set the same as LinkNet decoder. Original LinkNet only has Part A and Part C. D-LinkNet has an additional Part B which can enlarge the receptive field and as well as preserve the detailed spatial information. Each convolution layer is followed by a ReLU activation except the last convolution layer which use sigmoid activation.}
+\label{fig3}
+\end{figure*}
+
+After reading and analysing the paper, I finded a possible reason: the loss we used does not match the network. The loss used in the paper is WGAN-GP loss which benefits greatly to their inpainting framework as validated by its learning curves and faster/stabler convergence behaviors. But the same model trained with DCGAN sometimes collapses to limited modes for the inpainting task. Because the network (see Figure~\ref{fig1}) is thin but deep, so it hard to train and easy to collapse. 
+
+In view of this situation, there are two methods: {\bf (i)} the first is changing the training process. {\bf (ii)} the second is changing a generator network. I chose the second one.
+
+\subsection{The second dilation convolution}
+
+The second network drawn lessons from~\cite{D} is using the dilation convolution with resnet shown at Figure~\ref{fig3}.
+
+Consideration of avoiding a thin but deep network, I chose a network with complex but shallow network. The whole network is divided by three parts. The A part is encoder (see Figure~\ref{fig4} and Figure~\ref{fig5}). D-LinkNet uses ResNet34 pretrained on ImageNet dataset as its encoder. ResNet34 is originally designed for classification task on mid-resolution images of size $256\times 256$.
+
+ Because we want to increase the receptive field of feature points in the center part of the network as well as keep the detailed information. And using pooling layers could multiply increase the receptive field of feature points, but may reduce the resolution of center features maps and drop spacial information. The dilated convolution layer can be desirabel alternative of pooling layer. Thus, D-LinkNet uses several dilated convolution layers with skip connections in the center part (see Figure~\ref{fig6}). 
+
+ The decoder (see Figure~\ref{fig7}) of D-LinkNet remains the same as the original LinkNet which is computationally efficient. The decoder part uses transposed convolution layers to do umsampling, restoring the resolution of feature map from $32\times 32$ to $1024\times 1024$.
+
+ I have to add codes to our codes, but I don not run it successfully.
+
+ \begin{figure*}
+ \begin{center}
+ \includegraphics[width=12cm]{resnet341.png}
+ \end{center}
+ \caption{The first part of the ResNet34 code.}
+ \label{fig4}
+ \end{figure*}
+
+  \begin{figure*}
+ \begin{center}
+ \includegraphics[width=4cm]{resnet342.png}
+ \end{center}
+ \caption{The second part of the ResNet34 code.}
+ \label{fig5}
+ \end{figure*}
+
+ \begin{figure*}
+ \begin{center}
+ \includegraphics[width=12cm]{dilation3.png}
+ \end{center}
+ \caption{The code for dilation convolution.}
+ \label{fig6}
+ \end{figure*}
+
+ \begin{figure*}
+ \begin{center}
+ \includegraphics[width=12cm]{decoder.png}
+ \end{center}
+ \caption{The code for decoder part.}
+ \label{fig7}
+ \end{figure*}
+
+
+
+
+
+
+
+
+
+
+
+
+
+{\small
+\bibliographystyle{ieee}
+\bibliography{weekly0819}
+}
+
+
+
+
+
+
+
+
+\end{document}
