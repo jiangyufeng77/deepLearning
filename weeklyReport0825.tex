@@ -1,0 +1,121 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{graphicx,subfig}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[pagebackref=true,breaklinks=true, letterpaper=true, colorlinks,bookmarks=false]{hyperref} 
+\usepackage{amssymb}
+\usepackage{pythonhighlight}
+\usepackage{outline} \usepackage{pmgraph} \usepackage[normalem]{ulem}
+\usepackage{graphicx} \usepackage{verbatim}
+
+% \usepackage{minted} % need `-shell-escape' argument for local compile
+
+\title{
+    \vspace*{1in}
+    \includegraphics[width=2.75in]{zhenglab-logo.png}\\
+    \vspace*{1.2in}
+    \textbf{\huge Weekly Work Report}
+    \vspace{0.2in}
+}
+
+\author{Yufeng Jiang \\
+    \vspace*{0.5in} \\
+    \textbf{VISION@OUC} \\
+    \vspace*{1in}
+}
+
+\date{\today}
+
+
+\begin{document}
+
+\maketitle
+\setcounter{page}{0}
+\thispagestyle{empty}
+\newpage
+\section{Research problem}
+
+The main work is understanding the paper~\cite{dis} and running the code~\cite{god} as the basic result compared to the new result with modified codes written by myself.
+
+\section{Research approach}
+
+Read some papers including GAN, pix2pix, dilation convolution and self-attention~\emph{et al.} Write or modify codes cloned from github into the basic code to get more high-resolution and photo-reality images. 
+
+\section{Research progress}
+
+I have learned to write the autoencoder code and GAN code. It is important to read the pix2pix code downloaded from~\cite{Git}, and understand the core network architecture and training process as the basic of understanding~\cite{god}. After running the code~\cite{god}, I have saved the results at checkpoints folder. And then, in order to improve the generated image quality, I have added a novel generator network with dilation convolution.
+
+\section{Progress in this week}
+
+In this week, I have run the basic code and modified code at the server to get the training results and $.pkl$ folders, and then, testing it separately.
+
+\subsection{Generator with dilated convolution layers}
+
+Drawing inspiration from~\cite{D}, I decided to add a dilation convolution layers in the generator because dilation convolution is a powerful tool that can enlarge the receptive field of feature points without reducing the resolution of the feature maps. This makes it possible to produce a more high-resolution and photo-reality image. 
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=16cm]{resnet.png}
+\end{center}
+\caption{D-LinkNet architecture. Each blue rectangular block represents a multi-channel features map. Part A is the encoder of D-LinkNet. D-LinkNet uses ResNet34 as encoder. Part C is the decoder of D-LinkNet, it is set the same as LinkNet decoder. Original LinkNet only has Part A and Part C. D-LinkNet has an additional Part B which can enlarge the receptive field and as well as preserve the detailed spatial information. Each convolution layer is followed by a ReLU activation except the last convolution layer which use sigmoid activation.}
+\label{fig1}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=16cm]{epoch0.png}
+\end{center}
+\caption{{\bf Left:} The real image. {\bf Center:} The generated fake image using dilated convolution network. {\bf Right:} The generated fake image using basic model.}
+\label{fig2}
+\end{figure*}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=16cm]{gene.png}
+\end{center}
+\caption{{\bf Left:} The real image. {\bf Center:} The generated fake image using dilated convolution network. {\bf Right:} The generated fake image using basic model.}
+\label{fig3}
+\end{figure*}
+
+The whole network in this paper is shown at Figure~\ref{fig1}. This kind of complex but shallow network is easy and stable to train. The ResNet34 is originally designed for classification task on mid-resolution images of size $2256\times 256$, but in~\cite{D}, it is used at the images of size $1024\times 1024$. In our code, we also use it to address images of size $256\times 256$. The center part use dilated convolution layers with skip connection. 
+
+If the dilation rates of the stacked dilated convolution layers are 1, 2, 4, 8 respectively, then the receptive field of each layer will be 3, 7, 15, 31. So, the feature points on the last center part layer will see $31\times 31$ points on the first center feature map, covering main part of the main part of the first center feature map. 
+
+The decoder of D-LinkNet uses transposed convolution layers to do upsampling, restoring the resolution of feature map from $8\times 8$ to $256\times 256$.
+
+\subsection{Results}
+
+I trained the code with D-LinkNet network as our generator at the facades datasets. Generated images look a little more clear and real compared to the original resuls. There is a problem knowed just now that the result lacks some $.pkl$ folders to as a model for testing. Thus, adding some codes like the following one to get $.pkl$ folders is necessary. \\
+\begin{python}
+# save the generator
+if epoch % 40 == 0:
+    torch.save(self.G.state_dict(), '%s/generator_epoch_%d.pkl' % (self.config['outf'], epoch))
+\end{python}
+
+Test results using epoch 160 model with the sentence:\\
+$python~test.py~--config~configs/facades.yaml~--modeldir~checkpoints/generator\_epoch\_160.pkl~--cuda~--gpu\_ids~0$ \\
+
+The realB image, fakeB image generated from dialted convolution network and fakeB image generated by basic code are shown at Figure~\ref{fig2} and Figure~\ref{fig3}. From these two images, the generator using dilated convolution layers looks a little bit better than the basic model in my view. However, this is running at facades datasets with short images, so the result may be not accurate exactly. Now, I am running the cityscape with much more images to get a more accurate result.
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=16cm]{self.png}
+\end{center}
+\caption{The proposed self-attention mechanism. The $\otimes$ denotes matrix multiplication. The softmax operation is performed on each row.
+}
+\label{fig4}
+\end{figure*}
+
+\subsection{Self-attention}
+
+In~\cite{self}, authors propose the self-attention generative adversarial network (SAGAN) which allows attention-driven, long-range dependency modeling for image generation tasks. In SAGAN, details can be generated using cues from all feature locations. Moreover, the discriminator can check that highly detailed features in distant portions of the image are consistent with each other. The network structure is shown at Figure~\ref{fig4}. The main thought of this network is adapting the non-local model to add self-attention to the GAN framework, enabling both the generator and the discriminator to efficiently model relationships between widely separated spatial regions. But, I have no idea on how to use it properly.
+
+{\small
+\bibliographystyle{ieee}
+\bibliography{week}}
+
+\end{document}
